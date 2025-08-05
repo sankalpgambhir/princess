@@ -1189,7 +1189,7 @@ class SMTParser2InputAbsy (_env : Environment[SMTTypes.SMTType,
 
         // use a real function
         val f = MonoSortedIFunction(name, args map (_.toSort), resType.toSort,
-                                    true, true)
+                                    true, false)
         env.addFunction(f, SMTFunctionType(args.toList, resType))
 
         if (incremental)
@@ -1219,7 +1219,7 @@ class SMTParser2InputAbsy (_env : Environment[SMTTypes.SMTType,
 
           // use a real function
           val f = MonoSortedIFunction(name, args map (_.toSort), resType.toSort,
-                                      true, true)
+                                      true, false)
           env.addFunction(f, SMTFunctionType(args.toList, resType))
 
           if (incremental)
