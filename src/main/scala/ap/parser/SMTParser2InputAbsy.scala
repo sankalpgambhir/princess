@@ -62,6 +62,7 @@ import scala.collection.mutable.{ArrayBuffer,
                                  HashMap => MHashMap, HashSet => MHashSet}
 import ap.theories.TheoryRegistry
 import ap.theories.RecursiveADTExtension
+import ap.theories.FunctionalSpecificationExtension
 
 object SMTParser2InputAbsy {
 
@@ -157,8 +158,8 @@ class SMTParser2InputAbsy (_env : Environment[SMTTypes.SMTType,
                                               SMTTypes.SMTType],
                            settings : ParserSettings,
                            _prover : SimpleAPI)
-      extends Parser2InputAbsy
-          [SMTTypes.SMTType,
+      extends Parser2InputAbsy[
+           SMTTypes.SMTType,
            SMTParser2InputAbsy.VariableType,
            SMTParser2InputAbsy.SMTFunctionType,
            SMTParser2InputAbsy.SMTFunctionType,
@@ -512,6 +513,11 @@ class SMTParser2InputAbsy (_env : Environment[SMTTypes.SMTType,
    * Parse recursive predicates over strings as transducers
    */  
   private var recFunctionsAsTransducers = false
+  /**
+   * Whether to extract single invocation axioms as specifications on recursive
+   * functions over ADTs
+   */
+  private var extractSingleInvocationAxioms = Param.EXTRACT_SINGLE_INVOCATION_AXIOMS(settings)
 
   private def needCertificates : Boolean =
     genProofs || genInterpolants || genUnsatCores
@@ -1267,7 +1273,11 @@ class SMTParser2InputAbsy (_env : Environment[SMTTypes.SMTType,
       
       case cmd : AssertCommand => {
         val f = asFormula(translateTerm(cmd.term_, -1))
-        if (incrementalNoExtract) {
+        if (extractSingleInvocationAxioms && extractSingleInvocationAsExtension(f)) { 
+          // extraction succeeded, don't store this formula as an assertion
+          ()
+        }
+        else if (incrementalNoExtract) {
           if (needCertificates) {
             PartExtractor(f, false) match {
               case List(INamedPart(PartName.NO_NAME, g)) => {
@@ -4054,6 +4064,15 @@ class SMTParser2InputAbsy (_env : Environment[SMTTypes.SMTType,
     val recExt = new RecursiveADTExtension(adtTheories, f, asTerm(body))
 
     addTheory(recExt)
+  }
+
+  private def extractSingleInvocationAsExtension(f: IFormula): Boolean = {
+    val decomposition = 
+      FunctionalSpecificationExtension.decomposeSingleInvocationAxiom(f)
+    
+    decomposition
+      .map(FunctionalSpecificationExtension.apply)
+      .isDefined
   }
 
   private def addAxiomEquation(f : IFunction,

@@ -413,6 +413,11 @@ object Param {
     val defau : TermMeasure.Value = TermMeasure.Size
   }
 
+  case object EXTRACT_SINGLE_INVOCATION_AXIOMS extends Param {
+    type Value = Boolean
+    val defau : Boolean = true
+  }
+
   object NonLinearSplitting extends Enumeration {
     val Spherical, Sign = Value
   }
