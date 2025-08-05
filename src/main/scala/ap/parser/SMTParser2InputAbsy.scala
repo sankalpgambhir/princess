@@ -60,6 +60,8 @@ import ap.util.{Debug, Logic, PlainRange, Seqs}
 import scala.collection.immutable.VectorBuilder
 import scala.collection.mutable.{ArrayBuffer,
                                  HashMap => MHashMap, HashSet => MHashSet}
+import ap.theories.TheoryRegistry
+import ap.theories.RecursiveADTExtension
 
 object SMTParser2InputAbsy {
 
@@ -4021,13 +4023,38 @@ class SMTParser2InputAbsy (_env : Environment[SMTTypes.SMTType,
         recFunctions2Transducer(
           for ((f, trans) <- funs) yield (f, asFormula(trans)))
       stringTheoryBuilder.addTransducer(name, transducer)
-    } else {
+    } 
+    else {
+      def extractRecFunInput(f : IFunction) : scala.Option[Seq[ADT]] = {
+        val isorts = MonoSortedIFunction.functionType(f)._1 
+        val adtTheories =
+          isorts
+            .flatMap(TheoryRegistry.lookupSort)
+            .collect { case th: ADT => th }
+
+        if (adtTheories.isEmpty) None
+        else Some(adtTheories)
+      }
       for ((f, body) <- funs) {
-        // set up a defining equation and formula
         warn("assuming that recursive function " + f.name + " is partial")
-        addAxiomEquation(f, body)
+        // if this is a catamorphism, introduce a new extension for it
+        val adts = extractRecFunInput(f)
+        if (adts.isDefined) {
+          setupRecFun(adts.get, f, body)
+        }
+        // otherwise, add its definition as an axiom
+        else {
+          // set up a defining equation and formula
+          addAxiomEquation(f, body)
+        }
       }
     }
+
+  private def setupRecFun(adtTheories: Seq[ADT], f : IFunction, body : (IExpression, SMTType)): Unit = { 
+    val recExt = new RecursiveADTExtension(adtTheories, f, asTerm(body))
+
+    addTheory(recExt)
+  }
 
   private def addAxiomEquation(f : IFunction,
                                body : (IExpression, SMTType)) : Unit = {
