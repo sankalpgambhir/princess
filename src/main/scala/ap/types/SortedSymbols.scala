@@ -178,7 +178,7 @@ object MonoSortedIFunction {
 /**
  * Class for monomorphically sorted functions.
  */
-class MonoSortedIFunction(_name : String,
+case class MonoSortedIFunction(_name : String,
                           val argSorts : Seq[Sort],
                           val resSort : Sort,
                           _partial : Boolean, _relational : Boolean)
