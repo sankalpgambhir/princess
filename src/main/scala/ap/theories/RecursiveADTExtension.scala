@@ -10,7 +10,7 @@ import ap.parser.SMTParsingUtils.asTerm
 import ap.parser.SMTTypes.SMTType
 
 class RecursiveADTExtension(
-                            underlyingTheory: ADT,
+                            underlyingTheories: Seq[ADT],
                             recFun: IFunction,
                             body: ITerm
   ) extends SMTLinearisableTheory {
@@ -40,7 +40,7 @@ class RecursiveADTExtension(
     // for the recursive call, and thus not adding it
     val collector = new TheoryCollector
     collector.apply(definitionAxiom)
-    collector.theories.toSet + underlyingTheory
+    collector.theories.toSet ++ underlyingTheories
   }
 
   val (predicates, axioms, order, functionMap) = 
